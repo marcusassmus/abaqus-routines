@@ -10,19 +10,41 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Generate and update directory tree
-        uses: otthe/readme-directory-tree@v1
-        with:
-          max-depth: 3
+      - name: Install tree and update README
+        run: |
+          sudo apt-get install -y tree
+          # Generiere den Ordnerbaum (2 Ebenen tief, ignoriere .git und .github)
+          TREE_OUTPUT=$(tree -L 2 -I '.git|.github' --noreport)
+          
+          # Ersetze den Inhalt zwischen <!-- tree:start --> und <!-- tree:end -->
+          python3 -c "
+          import re
 
-      - name: Commit changes if README was updated
+          tree = '''$TREE_OUTPUT'''
+          replacement = f'<!-- tree:start -->\n\`\`\`\n{tree}\n\`\`\`\n<!-- tree:end -->'
+
+          with open('README.md', 'r') as f:
+              content = f.read()
+
+          updated_content = re.sub(
+              r'<!-- tree:start -->.*?<!-- tree:end -->',
+              replacement,
+              content,
+              flags=re.DOTALL
+          )
+
+          with open('README.md', 'w') as f:
+              f.write(updated_content)
+          "
+
+      - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git diff
           git commit -am "chore: auto-update folder structure in README [skip ci]" || echo "No changes to commit"
           git push
