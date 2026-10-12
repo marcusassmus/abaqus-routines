@@ -4,3 +4,8 @@ This is a personal collection of routines for performing various computations in
 
 * [GitHub Repo](https://github.com/marcusassmus/abaqus-routines)
 * [Help](http://130.149.89.49:2080/v2016/pdf_books/SCRIPT_USER.pdf)
+
+**Contents**
+
+<!-- tree:start -->
+<!-- tree:end -->
