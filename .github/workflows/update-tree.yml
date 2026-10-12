@@ -15,18 +15,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install tree and update README
+      - name: Generate clickable Markdown tree and update README
         run: |
-          sudo apt-get install -y tree
-          # Generiere den Ordnerbaum (2 Ebenen tief, ignoriere .git und .github)
-          TREE_OUTPUT=$(tree -L 2 -I '.git|.github' --noreport)
-          
-          # Ersetze den Inhalt zwischen <!-- tree:start --> und <!-- tree:end -->
           python3 -c "
+          import os
           import re
 
-          tree = '''$TREE_OUTPUT'''
-          replacement = f'<!-- tree:start -->\n\`\`\`\n{tree}\n\`\`\`\n<!-- tree:end -->'
+          EXCLUDE_DIRS = {'.git', '.github'}
+          
+          def generate_markdown_tree(dir_path, prefix=''):
+              entries = sorted(os.listdir(dir_path))
+              entries = [e for e in entries if e not in EXCLUDE_DIRS and not e.startswith('.')]
+              
+              tree_str = ''
+              for i, entry in enumerate(entries):
+                  path = os.path.join(dir_path, entry)
+                  is_last = (i == len(entries) - 1)
+                  connector = '└── ' if is_last else '├── '
+                  
+                  # Markdown-Link erstellen
+                  rel_path = os.path.relpath(path, '.')
+                  link = f'[{entry}]({rel_path})'
+                  
+                  tree_str += f'{prefix}{connector}{link}  \n'
+                  
+                  if os.path.isdir(path):
+                      new_prefix = prefix + ('    ' if is_last else '│   ')
+                      tree_str += generate_markdown_tree(path, new_prefix)
+                      
+              return tree_str
+
+          tree_output = generate_markdown_tree('.')
+          replacement = f'<!-- tree:start -->\n{tree_output}<!-- tree:end -->'
 
           with open('README.md', 'r') as f:
               content = f.read()
@@ -46,5 +66,5 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -am "chore: auto-update folder structure in README [skip ci]" || echo "No changes to commit"
+          git commit -am "chore: auto-update clickable tree in README [skip ci]" || echo "No changes to commit"
           git push
