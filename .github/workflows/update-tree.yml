@@ -1,0 +1,28 @@
+name: Update README Tree
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate and update directory tree
+        uses: otthe/readme-directory-tree@v1
+        with:
+          max-depth: 3
+
+      - name: Commit changes if README was updated
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git diff
+          git commit -am "chore: auto-update folder structure in README [skip ci]" || echo "No changes to commit"
+          git push
