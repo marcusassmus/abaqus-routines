@@ -1,0 +1,78 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% how to proceed, to get abaqus running using subroutines
+% (on a win10 machine)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+- you'll need following software:
+	* abaqus 2020 (abq2020)
+	* microsoft visual studio 2019 community (msv2019)
+	* intel oneAPI Base Toolkit (IoBT)
+	* intel oneAPI HPC Toolkit (IoHT) 
+
+- getting the software:
+	* abq2020 is provided by SS (G10-044, -52454)
+	* msv2019 is available from https://visualstudio.microsoft.com/de/vs/ (community version!, ms registration required, but free of any charges)
+	* IoBT is available at https://software.intel.com/content/www/us/en/develop/tools/oneapi/base-toolkit/download.html
+	* IoHT is available at https://software.intel.com/content/www/us/en/develop/tools/oneapi/hpc-toolkit/download.html
+
+- installing the stuff:
+	1) install abq2020
+		* follow SS's installation instructions
+	2) install msv2019 
+		* only option needed "desktop development with C++"
+	3) install IoBT
+		* install:
+			"Intel oneAPI DPC++/C++ Compiler"
+			"Intel oneAPI Threading Building Blocks"
+			"Intel DPC++ Compatibility Tool"
+			"Intel oneAPI DPC++ Library"
+	4) install IoHT
+		* install:
+			"Intel oneAPI DPC++/C++ Compiler & Intel C++ Compiler Classic"
+			"Intel Fortran Compiler (Beta) & Intel Fortran Compiler Classic"
+			"Intel MPI Library"
+			"Intel Trace Analyzer and Collector"
+
+- linking the stuff
+	* find and open file abq2020.bat 
+	* find path to file vcvarsall.bat of msv2019
+		(usally: "C:\Program Files(x86)\MicrosoftVisualStudio\2019\Community\VC\Auxiliary\Build"
+	* find path to file vars.bat
+		(e.g. "C:\Program Files(x86)\Intel\oneAPI\compiler\2021.1.1\env\" version may be different)
+	* add separatly the two paths in the Path-variable:
+		Open Control Panel -> System Properties -> Advanced -> Environment Variables -> System variables -> Path -> Edit -> New
+		(german: System -> Erweiterte Systemeinstellungen -> Umgebungsvariablen -> Systemvariablen -> Path -> Bearbeiten -> Neu)
+		
+	* change content of file abq2020.bat as follows while C is your hard drive and mind your directories, find contents of abq2020.bat below
+		(fill in your vars.bat folder)
+
+	% abq2020.bat %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	@echo off
+	setlocal
+	set ABA_COMMAND=%~nx0
+	set ABA_COMMAND_FULL=%~f0
+	call "C:\Program Files (x86)\Intel\oneAPI\compiler\2021.1.1\env\vars.bat" intel64 vs2019
+	"C:\SIMULIA\EstProducts\2020\win_b64\code\bin\ABQLauncher.exe" %*
+	endlocal
+	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+	
+	* find "abaqus_v6.env"
+		for abaqus 2020: "C:\SIMULIA\EstProducts\2020\win_b64\SMA\site"
+		before abaqus 2020: "C:\ProgramFiles\DassaultSystemes\SimulationServices\V6R2019x\win_b64\SMA\site"
+	* add following line at the end of "abaqus_v6.env":
+		compile_fortran+= ['/names:lowercase',]
+
+- ensure that abq2020 is linked correctly and soubroutines can be compiled
+	* open 'Software' > 'Dessault Systems SIMULIA Established Products 2020' > 'Abaqus Command' (be sure that you are admin! or 'open as admin')
+	* type 'abaqus verify -all'
+
+- job is done!
+
+
+----------------
+20210614_massmus
+	
+
+
+
+

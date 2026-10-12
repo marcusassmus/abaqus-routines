@@ -1,0 +1,374 @@
+      SUBROUTINE REDUCE_MANTISA(INPUT,OUTPUT,ORDER)
+      IMPLICIT NONE
+      DOUBLE PRECISION INPUT, OUTPUT, ORDER
+        OUTPUT = REAL(INT(INPUT * 10**ORDER)) / 10**ORDER
+      END SUBROUTINE REDUCE_MANTISA
+      
+      SUBROUTINE DISP(U,KSTEP,KINC,TIME,NODE,NOEL,JDOF,COORDS)
+C
+C      INCLUDE 'ABA_PARAM.INC'
+C
+      implicit real*8(A-H, O-Z)
+      
+      DIMENSION U(3),TIME(2),COORDS(3)
+      
+C      Coordinates of vertices
+      REAL*8 P1XYZ(3), P2XYZ(3), P3XYZ(3), P4XYZ(3)
+C     Displacements array UPN[Ux^zmin,Uy^zmin,Uz^zmin,Ux^zmax,Uy^zmax,Uz^zmax], where N - is number of corner
+      REAL*8 UP1(6), UP2(6), UP3(6),UP4(6),ZCOORD
+      REAL*8 LAY1THICKNESS,LAY2THICKNESS,LAY3THICKNESS
+      REAL*8 ZCOORD1,ZCOORD2,TOTALTHICKNESS,FLAYERTHICKNESS
+      
+      ZCOORD = COORDS(3)
+      LAY1THICKNESS = 3.2
+      LAY2THICKNESS = 1.0
+      LAY3THICKNESS = 3.2
+      ZCOORD1 = LAY1THICKNESS
+      ZCOORD2 = LAY1THICKNESS+LAY2THICKNESS
+      TOTALTHICKNESS = LAY1THICKNESS+LAY2THICKNESS+LAY3THICKNESS
+      
+      CALL REDUCE_MANTISA(ZCOORD,ZCOORD,6)
+      
+      IF ((ZCOORD.LT.0.0).OR.(ZCOORD.GT.TOTALTHICKNESS)) THEN
+        WRITE(6,*)  "********************************"
+        WRITE(6,*)  "INVALID Z COORD"
+        WRITE(6,*)  "problem is in node ",NODE
+        WRITE(6,*)  "with coordinates ", COORDS(1), COORDS(2), COORDS(3)
+        WRITE(6,*)  "********************************"
+        CALL XIT
+      ENDIF
+      
+      IF ((ZCOORD.GE.0.0).AND.(ZCOORD.LE.ZCOORD1)) THEN
+C      BOTTOM LAYER      
+        CALL LAYER1XYZ(P1XYZ,P2XYZ,P3XYZ,P4XYZ)
+        CALL LAYER1DISP(UP1,UP2,UP3,UP4)
+        FLAYERTHICKNESS=LAY1THICKNESS
+      ENDIF
+      
+      IF ((ZCOORD.GT.ZCOORD1).AND.(ZCOORD.LT.ZCOORD2)) THEN
+C      MIDDLE LAYER      
+        CALL LAYER2XYZ(P1XYZ,P2XYZ,P3XYZ,P4XYZ)
+        CALL LAYER2DISP(UP1,UP2,UP3,UP4)
+        FLAYERTHICKNESS=LAY2THICKNESS
+      ENDIF
+      
+      IF ((ZCOORD.GE.ZCOORD2).AND.(ZCOORD.LE.TOTALTHICKNESS)) THEN
+C      TOP LAYER      
+        CALL LAYER3XYZ(P1XYZ,P2XYZ,P3XYZ,P4XYZ)
+        CALL LAYER3DISP(UP1,UP2,UP3,UP4)
+        FLAYERTHICKNESS=LAY3THICKNESS
+      ENDIF
+          
+      U(1) = 0.0
+      
+C      OPEN (unit=11, FILE="e:\AbaqusJob\plateBCs\do", status="unknown") 
+C       WRITE (11,*) "TEST ", IEDGEAXIS,MINCOORD,MAXCOORD
+      
+      UVAL = CALCUL_U(COORDS,P1XYZ,P2XYZ,P3XYZ,P4XYZ,FLAYERTHICKNESS,
+     1                UP1,UP2,UP3,UP4, JDOF)
+     
+C      WRITE (11,*) "TEST ", COORDS(1),COORDS(2),COORDS(3), UVAL
+      U(1) = UVAL
+      
+      RETURN
+      END
+
+C      FUNCTION CALCULATES DISPLACEMENT
+      REAL*8 FUNCTION CALCUL_U(COORDS,P1,P2,P3,P4,THICKNESS,
+     1 UP1,UP2,UP3,UP4, IDOF)
+     
+       REAL*8 THICKNESS,P1(3),P2(3),P3(3),P4(3),UP1(6),UP2(6),UP3(6),
+     1  UP4(6), COORDS(3)
+     
+       CALCUL_U = 0.0
+C      TOP EDGE
+       IF (COORDS(2).EQ.P1(2)) THEN
+       CALL INTERP2D(COORDS,P1,P2,THICKNESS,1, UP1, UP2, IDOF, CALCUL_U)
+        RETURN
+       ENDIF
+       
+C      BOTTOM EDGE
+       IF (COORDS(2).EQ.P4(2)) THEN
+       CALL INTERP2D(COORDS,P4,P3,THICKNESS,1, UP4, UP3, IDOF, CALCUL_U)
+        RETURN
+       ENDIF       
+ 
+C      RIGHT EDGE
+       IF (COORDS(1).EQ.P2(1)) THEN
+       CALL INTERP2D(COORDS,P3,P2,THICKNESS,2, UP3, UP2, IDOF, CALCUL_U)
+       WRITE (11,*) "TEST ", COORDS(1),COORDS(2),COORDS(3),CALCUL_U
+        RETURN
+       ENDIF
+       TMP = COORDS(1)
+       CALL REDUCE_MANTISA(TMP,TMP,6)
+C      LEFT EDGE
+       IF (TMP.EQ.P1(1)) THEN
+       CALL INTERP2D(COORDS,P4,P1,THICKNESS,2, UP4, UP1, IDOF, CALCUL_U)
+        RETURN
+       ENDIF          
+     
+        WRITE(6,*)  "INVALID COORDS"
+        WRITE(6,*)  "problem is in node ",NODE
+        WRITE(6,*)  "with coordinates ", COORDS(1), COORDS(2), COORDS(3)
+        CALL XIT
+      END
+      
+C     2D INTERPOLATION, COORDS - NODAL COORDINATES, PSTART,PEND - COORDS OF START and END POINT, 
+C                                UPSTART, UPEDN - DISPLACEMENTS AT START and END POINT, IDOF-DOF FOR DISPLACEMENTS BC (JDOF)
+      SUBROUTINE INTERP2D(COORDS,PSTART,PEND,THICKNESS,IEDGEAXIS,
+     1 UPSTART, UPEND, IDOF, INTERPVAL)
+
+       REAL*8 ZMIN,ZMAX,THICKNESS,PSTART(3),PEND(3),UPSTART(6),UPEND(6),
+     1  COORDS(3)
+       REAL*8 MINCOORD,MAXCOORD,COORD,ZCOORD,UZMIN,UZMAX,INTERPVAL
+       
+       
+       ZMIN = PSTART(3)-THICKNESS/2.0
+       ZMAX = PSTART(3)+THICKNESS/2.0
+       MINCOORD = PSTART(IEDGEAXIS)
+       MAXCOORD = PEND(IEDGEAXIS)
+       COORD = COORDS(IEDGEAXIS)
+       ZCOORD = COORDS(3)
+       
+       CALL REDUCE_MANTISA(ZCOORD,ZCOORD,6)
+       
+       IF ((ZCOORD.LT.ZMIN).OR.(ZCOORD.GT.ZMAX)) THEN
+        WRITE(6,*)  "********************************"
+        WRITE(6,*)  "Z is out of range"
+        WRITE(6,*)  "problem is in node ",NODE
+        WRITE(6,*)  "with coordinates ", COORDS(1), COORDS(2), COORDS(3)
+        WRITE(6,*)  "********************************"
+        CALL XIT
+       ENDIF
+       
+C       1D INTERPOLATION
+       CALL INTERP1D(MINCOORD,MAXCOORD,COORD,
+     1               UPSTART(IDOF),UPEND(IDOF),UZMIN)
+C           +3 because 1-3 values are displacements at bottom point, 4-6 - are displ at top point
+       CALL INTERP1D(MINCOORD,MAXCOORD,COORD,
+     1               UPSTART(IDOF+3),UPEND(IDOF+3),UZMAX)
+     
+       CALL INTERP1D(ZMIN,ZMAX,ZCOORD,UZMIN,UZMAX,INTERPVAL)
+      END      
+      
+      SUBROUTINE INTERP1D(X0,X1,XI,Y0,Y1,YI)
+        REAL*8 X0,X1,XI,Y0,Y1,YI
+        
+        IF ((X1-X0).EQ.0) THEN
+            WRITE (6,*) "ERROR: DIVISION BY ZERO"
+            CALL XIT
+        ENDIF
+        
+        IF (Y1.EQ.Y0) THEN
+            YI = Y1
+        ELSE
+         YI = Y0+(XI-X0)*(Y1-Y0)/(X1-X0)
+        ENDIF
+C        WRITE (11,*) "TEST2 ", X0,X1,XI,Y0,Y1,YI
+      END
+      
+C     COORDINATES OF CORNERS FOR LAYER 1      
+      SUBROUTINE LAYER1XYZ(P1,P2,P3,P4)
+      REAL*8 P1(3),P2(3),P3(3),P4(3)
+C      LEFT TOP CORNER
+      P1(1) = 0.0
+      P1(2) = 129.0
+      P1(3) = 1.6
+      
+C      RIGHT TOP CORNER      
+      P2(1) = 129.0
+      P2(2) = 129.0
+      P2(3) = 1.6
+      
+C      RIGHT BOTTOM CORNER      
+      P3(1) = 129.0
+      P3(2) = 0.0
+      P3(3) = 1.6
+      
+C      LEFT BOTTOM CORNER      
+      P4(1) = 0.0
+      P4(2) = 0.0
+      P4(3) = 1.6
+       END
+       
+C     COORDINATES OF CORNERS FOR LAYER 2 
+      SUBROUTINE LAYER2XYZ(P1,P2,P3,P4)
+      REAL*8 P1(3),P2(3),P3(3),P4(3)
+C      LEFT TOP CORNER
+      P1(1) = 0.0
+      P1(2) = 129.0
+      P1(3) = 3.7
+      
+C      RIGHT TOP CORNER      
+      P2(1) = 129.0
+      P2(2) = 129.0
+      P2(3) = 3.7
+      
+C      RIGHT BOTTOM CORNER      
+      P3(1) = 129.0
+      P3(2) = 0.0
+      P3(3) = 3.7
+      
+C      LEFT BOTTOM CORNER      
+      P4(1) = 0.0
+      P4(2) = 0.0
+      P4(3) = 3.7
+       END
+
+C     COORDINATES OF CORNERS FOR LAYER 3
+      SUBROUTINE LAYER3XYZ(P1,P2,P3,P4)
+      REAL*8 P1(3),P2(3),P3(3),P4(3)
+C      LEFT TOP CORNER
+      P1(1) = 0.0
+      P1(2) = 129.0
+      P1(3) = 5.8
+      
+C      RIGHT TOP CORNER      
+      P2(1) = 129.0
+      P2(2) = 129.0
+      P2(3) = 5.8
+      
+C      RIGHT BOTTOM CORNER      
+      P3(1) = 129.0
+      P3(2) = 0.0
+      P3(3) = 5.8
+      
+C      LEFT BOTTOM CORNER      
+      P4(1) = 0.0
+      P4(2) = 0.0
+      P4(3) = 5.8
+       END
+       
+  
+      SUBROUTINE LAYER1DISP(UP1,UP2,UP3,UP4)
+      REAL*8 UP1(6),UP2(6),UP3(6),UP4(6)
+C     Displacements array UPN[Ux^zmin,Uy^zmin,Uz^zmin,Ux^zmax,Uy^zmax,Uz^zmax], where N - is number of corner
+C      4 LEFT TOP:
+C      BOTTOM CORNER
+      UP1(1) = 0.001472943770438092
+      UP1(2) = 0.0022645058673978077
+      UP1(3) = 0.0
+C      TOP CORNER
+      UP1(4) = 0.0014800293495619082
+      UP1(5) = 0.0023024430326021926
+      UP1(6) = 0.0
+      
+C      3 RIGHT TOP
+C      BOTTOM CORNER  
+      UP2(1) = 0.0016432395081240503
+      UP2(2) = 0.002126090034909459
+      UP2(3) = -0.083258279830
+C      TOP CORNER
+      UP2(4) = 0.0017245542918759495
+      UP2(5) = 0.002159225005090541
+      UP2(6) = -0.083258279830
+C      -0.083258279830
+C      2 RIGHT BOTTOM 
+C      BOTTOM CORNER  
+      UP3(1) = 0.0025399890514296486
+      UP3(2) = 0.0018777773368821734
+      UP3(3) = -0.272433076830
+C      TOP CORNER
+      UP3(4) = 0.0026092700485703516
+      UP3(5) = 0.0019839170031178267
+      UP3(6) = -0.272433076830
+C	   -0.272433076830     
+C      1 LEFT BOTTOM 
+C      BOTTOM CORNER
+      UP4(1) = 0.0033977765859403495
+      UP4(2) = 0.00210311420419632
+      UP4(3) = -0.013581668830
+C      TOP CORNER
+      UP4(4) = 0.0034029212140596504
+      UP4(5) = 0.00220401279580368
+      UP4(6) = -0.013581668830
+C      -0.013581668830
+       END
+       
+      SUBROUTINE LAYER2DISP(UP1,UP2,UP3,UP4)
+      REAL*8 UP1(6),UP2(6),UP3(6),UP4(6)
+C     Displacements array UPN[Ux^zmin,Uy^zmin,Uz^zmin,Ux^zmax,Uy^zmax,Uz^zmax], where N - is number of corner
+C      4 LEFT TOP:
+C      BOTTOM CORNER
+      UP1(1) = 0.0014800293495619082
+      UP1(2) = 0.0023024430326021926
+      UP1(3) = 0.0
+C      TOP CORNER
+      UP1(4) = -0.0014800293495619082
+      UP1(5) = -0.0023024430326021926
+      UP1(6) = 0.0
+      
+C      3 RIGHT TOP
+C      BOTTOM CORNER  
+      UP2(1) = 0.0017245542918759495
+      UP2(2) = 0.002159225005090541
+      UP2(3) = -0.083258279830
+C      TOP CORNER
+      UP2(4) = -0.0015029588722841399
+      UP2(5) = -0.002159225005090541
+      UP2(6) = -0.083258279830
+C      -0.083258279830     
+C      2 RIGHT BOTTOM 
+C      BOTTOM CORNER  
+      UP3(1) = 0.0026092700485703516
+      UP3(2) = 0.0019839170031178267
+      UP3(3) = -0.272433076830
+C      TOP CORNER
+      UP3(4) = 0.0025399890514296486
+      UP3(5) = 0.0018777773368821734
+      UP3(6) = -0.272433076830
+      
+C      1 LEFT BOTTOM 
+C      BOTTOM CORNER
+      UP4(1) = 0.0034029212140596504
+      UP4(2) = 0.00220401279580368
+      UP4(3) = -0.013581668830
+C      TOP CORNER
+      UP4(4) = -0.0034029212140596504
+      UP4(5) = -0.00220401279580368
+      UP4(6) = -0.013581668830
+       END
+       
+      SUBROUTINE LAYER3DISP(UP1,UP2,UP3,UP4)
+      REAL*8 UP1(6),UP2(6),UP3(6),UP4(6)
+C     Displacements array UPN[Ux^zmin,Uy^zmin,Uz^zmin,Ux^zmax,Uy^zmax,Uz^zmax], where N - is number of corner
+C      4 LEFT TOP:
+C      BOTTOM CORNER
+      UP1(1) = -0.0014800293495619082
+      UP1(2) = -0.0023024430326021926
+      UP1(3) = 0.0
+C      TOP CORNER
+      UP1(4) = -0.001472943770438092
+      UP1(5) = -0.0022645058673978077
+      UP1(6) = 0.0
+      
+C      3 RIGHT TOP
+C      BOTTOM CORNER  
+      UP2(1) = -0.0015029588722841399
+      UP2(2) = -0.002159225005090541
+      UP2(3) = -0.083258279830
+C      TOP CORNER
+      UP2(4) = -0.00140891232771586
+      UP2(5) = -0.002126090034909459
+      UP2(6) = -0.083258279830
+      
+C      2 RIGHT BOTTOM 
+C      BOTTOM CORNER  
+      UP3(1) = 0.0025399890514296486
+      UP3(2) = 0.0018777773368821734
+      UP3(3) = -0.272433076830
+C      TOP CORNER
+      UP3(4) = 0.0026092700485703516
+      UP3(5) = 0.0019839170031178267
+      UP3(6) = -0.272433076830
+      
+C      1 LEFT BOTTOM 
+C      BOTTOM CORNER
+      UP4(1) = -0.0034029212140596504
+      UP4(2) = -0.00220401279580368
+      UP4(3) = -0.013581668830
+C      TOP CORNER
+      UP4(4) = -0.0033977765859403495
+      UP4(5) = -0.00210311420419632
+      UP4(6) = -0.013581668830
+       END

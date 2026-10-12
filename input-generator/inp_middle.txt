@@ -1,0 +1,13 @@
+** UEL elements (material included in implementation)**
+*USER ELEMENT,NODES=8,TYPE=U1004,PROPERTIES=<NSPROPS>,VARIABLES=<NSVARS>
+11,12,13,14,3,15,16,17,18
+**11: u1
+**12: u2
+**13: udelta1
+**14: udelta2
+**3: w
+**15: phi1
+**16: phi2
+**17: phidelta1
+**18: phidelta2
+*Element, type=U1004,ELSET=UELS

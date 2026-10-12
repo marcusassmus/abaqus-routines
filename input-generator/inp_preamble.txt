@@ -1,0 +1,84 @@
+*Heading
+ TEST OF USER ELEMENT
+**
+** Parameters for UEL and UMAT **
+** Output of DOFs, moments and membrane forces
+**(selective or complete integration):
+** please uncomment the following 7 lines:
+***parameter
+**NSTATV = 51
+**NGAUSS = 9
+**OUTPUT = 1.0
+**ELEVIS = 'CPS8'
+**** Integration: 1=complete, 2=selective, 3=reduced(choose between 1 or 2!)
+**INTEGR=2
+**
+** Output of DOFs, moments and membrane forces (reduced integration):
+** please uncomment the following 7 lines:
+*parameter
+NSTATV = 51
+NGAUSS = 4
+OUTPUT = 1.0
+ELEVIS = 'CPS8R'
+** Integration: 1=complete, 2=selective,3=reduced
+INTEGR=3
+**
+** Output of lateral forces (selective or reducedintegration):
+** please uncomment the following 7 lines:
+***parameter
+**NSTATV = 10
+**NGAUSS = 4
+**OUTPUT = 2.0
+**ELEVIS = 'CPS8R'
+**** Integration: 1=complete, 2=selective,3=reduced (choose between 2 or 3!)
+**INTEGR=2
+**
+** Output of lateral forces (complete integration):
+** please uncomment the following 7 lines:
+***parameter
+**NSTATV = 10
+**NGAUSS = 9
+**OUTPUT = 2.0
+**ELEVIS = 'CPS8'
+**** Integration: 1=complete, 2=selective,3=reduced
+**INTEGR=1
+**
+** use similar values in subroutine UEL for:
+NSVARS = NSTATV * NGAUSS
+NUELMX = 10000
+** Material parameters:
+KAPPA =1.
+** shear correction parameter
+ETOP = 73000.
+** Young's modulus of top layer
+ECORE = 7.9
+** Young's modulus of core layer
+EBACK = 73000.
+** Young's modulus of back layer
+NUTOP = 0.3
+** Poisson's ratio of top layer
+NUCORE = 0.41
+** Poisson's ratio of core layer
+NUBACK = 0.3
+** Poisson's ratio of back layer
+TTOP = 3.2
+** thickness of top layer
+TCORE = 1.0
+** thickness of core layer
+TBACK = 3.2
+** thickness of back layer
+GTOP = 28076.923076923076923076923076923
+** shear modulus of top layer
+GCORE = 2.799
+** shear modulus of core layer
+GBACK = 28076.923076923076923076923076923
+** shear modulus of back layer
+NSPROPS = 23
+** Foundation
+FOUND = 0
+** Load-Type
+** 0: uniform load
+** 1: sinusoidal load
+** 2: fourier-series load
+LTYPE =0
+**geometry data

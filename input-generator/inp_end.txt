@@ -1,0 +1,49 @@
+*Step
+*Static
+1., 1., 1e-05, 1.
+**x1=1620
+*Boundary
+Set-2, 3, 3
+**x1=0
+*Boundary
+Set-3, 3, 3
+**Set-3, 11, 11
+**Set-3, 13, 13
+**x2=810
+*Boundary
+Set-4, 3, 3
+**x2=0
+*Boundary
+Set-5, 3, 3
+**11: u1
+**12: u2
+**13: udelta1
+**14: udelta2
+**3: w
+**15: phi1
+**16: phi2
+**17: phidelta1
+**18: phidelta2
+** LOADS
+** U1 - amplitude for sinusoidal load
+** U2 - q
+** U3 - s1
+** U4 - s2
+*Dload
+UELS, U1,  0.000
+*Dload
+UELS, U2,  0.0005
+*Dload
+UELS, U3,  0.000
+*Dload
+UELS, U4,  0.0000
+*NODE PRINT
+U,
+** FIELD OUTPUT: F-Output-1
+** 
+*Output, field, frequency=1
+*Node Output
+U, RF
+*Element Output, directions=YES
+SDV
+*END STEP

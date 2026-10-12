@@ -1,0 +1,9 @@
+** fourier-series numbers
+FNUMBER=3
+** setting angle
+** 90>ALPHA>=0: load will be interpreted asow load
+** 0>ALPHA>-90: load will be interpreted asnd load
+ALPHA=0
+** factor for Uebergangsbedingungen
+FACTOR = 0.5 * TCORE +0.25 * ( TBACK + TTOP )
+*NODE, NSET=ALL

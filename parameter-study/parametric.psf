@@ -1,0 +1,18 @@
+# parametric study Thicknesse of Top Layer (TTOP with restriction TBACK=TTOP)
+xlwt=ParStudy(par=('TTOP'),name='benchmark-Xel-lwt')
+# defining the parameters
+#xlwt.define(DISCRETE,par='TTOP',domain=(3.25))
+#xlwt.define(DISCRETE,par='TTOP',domain=(1,1.05,1.1,1.15,1.2,1.25,1.3,1.35,1.4,1.45,1.5,1.55,1.6,1.65,1.7,1.75,1.8,1.85,1.9,1.95,2,2.05,2.1,2.15))
+xlwt.define(CONTINUOUS,par='TTOP',domain=(1.,4.))
+# sampling
+xlwt.sample(INTERVAL,par='TTOP',interval=0.05)
+# combine the samples .... aba bullshit
+xlwt.combine(MESH)
+# generate analysis job data
+xlwt.generate(template='benchmark-Xel-lwt')
+# execute the jobs
+xlwt.execute(ALL,execOptions='user=lwt8.for')
+# read results from ODB and report
+xlwt.output(file=ODB,step=1)
+xlwt.gather(results='EIGFREQ',variable='MODAL',mode=1)
+xlwt.report(FILE,results=('EIGFREQ'),par=('ECORE'),file='h-ergebnisse.txt')

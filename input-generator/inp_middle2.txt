@@ -1,0 +1,7 @@
+*UEL PROPERTY,ELSET=UELS
+<OUTPUT>,<INTEGR>, <KAPPA>,<ETOP>, <ECORE>,<EBACK>,<NUTOP>,<NUCORE>,
+<NUBACK>, <TTOP>, <TCORE>, <TBACK>, <GTOP>,<GCORE>,<GBACK>,<FOUND>,
+<LTYPE>,<XMIN>,<XMAX>,<YMIN>,<YMAX>,<FNUMBER>,<ALPHA>
+** Elements for visualization (material as definedin umat)
+**
+*ELEMENT, TYPE=<ELEVIS>, ELSET=VIS

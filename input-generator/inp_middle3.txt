@@ -1,0 +1,11 @@
+*Solid Section, elset=VIS, material=VIS
+100.
+**
+*MATERIAL, NAME=VIS
+*CONDUCTIVITY
+0.
+*DEPVAR
+<NSTATV>
+*USER MATERIAL,CONST=0
+,
+**
