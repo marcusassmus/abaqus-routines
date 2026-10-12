@@ -8,4 +8,9 @@ This is a personal collection of routines for performing various computations in
 **Contents**
 
 <!-- tree:start -->
+```
+.
+├── README.md
+└── elastic.for
+```
 <!-- tree:end -->
